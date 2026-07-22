@@ -3,16 +3,20 @@ const ObjectId = require('mongodb').ObjectId;
 
 const getAll = async (req, res) => {
     //#swagger.tags = ['Products']
-    const products = await mongodb.getDb().db().collection('products').find();
+    try {
 
-    if (!products) {
-        res.status(404).json({ message: 'No products found' });
-        return;
+        const products = await mongodb.getDb().db().collection('products').find();
+        if (!products) {
+            res.status(404).json({ message: 'No products found' });
+            return;
+        }
+        products.toArray().then((products) => {
+            res.setHeader('Content-Type', 'application/json');
+            res.status(200).json(products);
+        })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
-    products.toArray().then((products) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.status(200).json(products);
-    });
 }
 
 const getSingle = async (req, res) => {
@@ -91,16 +95,20 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
     //#swagger.tags = ['Products']
-    if (!ObjectId.isValid(req.params.id)) {
-        res.status(400).json({ message: 'Invalid product ID' });
-        return;
-    }
-    const ProductId = new ObjectId(req.params.id);
-    const response = await mongodb.getDb().db().collection('products').deleteOne({ _id: ProductId });
-    if (response.deletedCount === 0) {
-        res.status(404).json({ message: 'Invalid ID' });
-    } else {
-        res.status(200).json(response);
+    try {
+        if (!ObjectId.isValid(req.params.id)) {
+            res.status(400).json({ message: 'Invalid product ID' });
+            return;
+        }
+        const ProductId = new ObjectId(req.params.id);
+        const response = await mongodb.getDb().db().collection('products').deleteOne({ _id: ProductId });
+        if (response.deletedCount === 0) {
+            res.status(404).json({ message: 'Invalid ID' });
+        } else {
+            res.status(200).json(response);
+        }
+    } catch {
+        res.status(500).json({ message: err.message })
     }
 }
 
